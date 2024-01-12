@@ -1,0 +1,70 @@
+name: crystal-arm64
+
+services:
+  crystal:
+    build:
+      dockerfile: Dockerfile.crystal
+      args:
+        ALPINE_VERSION:
+        CRYSTAL_VERSION:
+    image: matefarkas/crystal-arm64/crystal:${CRYSTAL_VERSION}
+    network_mode: default
+    user: ${USER_ID:-1000}:${GROUP_ID:-1000}
+    volumes:
+      - ./out/:/out/:rw
+
+  shards:
+    build:
+      dockerfile: Dockerfile.shards
+      args:
+        ALPINE_VERSION:
+        CRYSTAL_VERSION:
+        SHARDS_VERSION:
+    image: matefarkas/crystal-arm64/shards:${SHARDS_VERSION}
+    network_mode: default
+    user: ${USER_ID:-1000}:${GROUP_ID:-1000}
+    volumes:
+      - ./out/:/out/:rw
+
+  libgc:
+    build:
+      dockerfile: Dockerfile.libgc
+      target: debian
+      args:
+        gc_version: ${GC_VERSION}
+        release: ${RELEASE}
+    command: |
+      -c '
+        mkdir -p /out/lib/crystal/
+        cp /bdwgc/.libs/libgc.a /out/lib/crystal/
+      '
+    entrypoint: /bin/bash
+    environment:
+      gc_version: ${GC_VERSION}
+      release: ${RELEASE}
+    image: matefarkas/crystal-arm64/libgc:${CRYSTAL_VERSION}
+    network_mode: default
+    user: ${USER_ID:-1000}:${GROUP_ID:-1000}
+    volumes:
+      - ./out/:/out/:rw
+
+  package:
+    build:
+      dockerfile: Dockerfile.package
+      args:
+        ALPINE_VERSION:
+        CRYSTAL_VERSION:
+    depends_on:
+      crystal:
+        condition: service_completed_successfully
+      libgc:
+        condition: service_completed_successfully
+      shards:
+        condition: service_completed_successfully
+    environment:
+      CRYSTAL_VERSION:
+    image: matefarkas/crystal-arm64/package:${CRYSTAL_VERSION}
+    network_mode: default
+    user: ${USER_ID:-1000}:${GROUP_ID:-1000}
+    volumes:
+      - ./out/:/out/:rw

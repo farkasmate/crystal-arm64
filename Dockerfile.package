@@ -1,0 +1,15 @@
+ARG ALPINE_VERSION
+
+FROM alpine:${ALPINE_VERSION} AS SOURCE
+
+ARG CRYSTAL_VERSION
+
+WORKDIR /build/
+
+ADD https://github.com/crystal-lang/crystal/releases/download/${CRYSTAL_VERSION}/crystal-${CRYSTAL_VERSION}-1-linux-x86_64.tar.gz .
+
+RUN tar x -f crystal-${CRYSTAL_VERSION}-1-linux-x86_64.tar.gz --exclude crystal-${CRYSTAL_VERSION}-1/bin/* --exclude crystal-${CRYSTAL_VERSION}-1/lib/crystal/libgc.a
+
+CMD cp -r crystal-${CRYSTAL_VERSION}-1/ /tmp/ \
+  && cp -r /out/bin/ /out/lib/ /tmp/crystal-${CRYSTAL_VERSION}-1/ \
+  && tar cz -f /out/crystal-${CRYSTAL_VERSION}-1-linux-aarch64.tar.gz -C /tmp/ crystal-${CRYSTAL_VERSION}-1/

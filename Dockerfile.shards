@@ -1,0 +1,43 @@
+ARG ALPINE_VERSION
+ARG CRYSTAL_VERSION
+
+FROM alpine:${ALPINE_VERSION} AS SOURCE
+
+ARG RELEASE
+ARG SHARDS_VERSION
+
+WORKDIR /build/
+
+ADD --keep-git-dir=true https://github.com/crystal-lang/shards.git#${SHARDS_VERSION} .
+
+FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine AS BUILDER
+
+WORKDIR /build/
+
+COPY --from=SOURCE /build/ .
+
+RUN apk add --no-cache \
+  curl
+
+RUN make SHARDS=false FLAGS="--stats --cross-compile --target aarch64-linux-musl --static ${RELEASE:+--release}" \
+  | tee /tmp/build.log \
+  && grep '^cc' /tmp/build.log > link.sh
+
+FROM alpine:${ALPINE_VERSION} AS LINKER
+
+WORKDIR /build/
+
+COPY --from=SOURCE /build/ .
+COPY --from=BUILDER /build/bin/ /build/bin/
+COPY --from=BUILDER /build/link.sh /build/
+
+RUN apk add --no-cache \
+  alpine-sdk \
+  gc-dev \
+  libevent-static \
+  pcre2-dev \
+  yaml-static
+
+RUN . link.sh
+
+CMD mkdir -p /out/bin/ && cp bin/shards /out/bin/

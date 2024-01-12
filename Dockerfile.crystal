@@ -1,0 +1,49 @@
+ARG ALPINE_VERSION
+ARG CRYSTAL_VERSION
+
+FROM alpine:${ALPINE_VERSION} AS SOURCE
+
+ARG CRYSTAL_VERSION
+ARG RELEASE
+
+WORKDIR /build/
+
+ADD --keep-git-dir=true https://github.com/crystal-lang/crystal.git#${CRYSTAL_VERSION} .
+
+FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine AS BUILDER
+
+WORKDIR /build/
+
+COPY --from=SOURCE /build/ .
+
+RUN apk add --no-cache \
+  alpine-sdk \
+  llvm15-dev
+
+RUN make crystal stats=true static=true ${RELEASE:+release=true} target=aarch64-linux-musl CRYSTAL_CONFIG_TARGET=aarch64-linux-gnu \
+  | tee /tmp/build.log \
+  && grep '^cc' /tmp/build.log > link.sh
+
+FROM alpine:${ALPINE_VERSION} AS LINKER
+
+WORKDIR /build/
+
+COPY --from=SOURCE /build/ .
+COPY --from=BUILDER /build/.build/ /build/.build/
+COPY --from=BUILDER /build/link.sh /build/
+
+RUN apk add --no-cache \
+  alpine-sdk \
+  gc-dev \
+  libevent-static \
+  libxml2-static\
+  llvm15-dev \
+  llvm15-static \
+  pcre2-dev \
+  zlib-static
+
+RUN make deps
+
+RUN . link.sh
+
+CMD mkdir -p /out/bin/ && cp .build/crystal /out/bin/
