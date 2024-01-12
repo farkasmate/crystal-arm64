@@ -1,16 +1,18 @@
+# syntax=docker/dockerfile:1-labs
 ARG ALPINE_VERSION
 ARG CRYSTAL_VERSION
 
 FROM alpine:${ALPINE_VERSION} AS SOURCE
 
 ARG CRYSTAL_VERSION
-ARG RELEASE
 
 WORKDIR /build/
 
 ADD --keep-git-dir=true https://github.com/crystal-lang/crystal.git#${CRYSTAL_VERSION} .
 
 FROM crystallang/crystal:${CRYSTAL_VERSION}-alpine AS BUILDER
+
+ARG RELEASE
 
 WORKDIR /build/
 

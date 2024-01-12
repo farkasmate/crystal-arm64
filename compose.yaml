@@ -1,12 +1,20 @@
 name: crystal-arm64
 
 services:
+  qemu:
+    image: multiarch/qemu-user-static
+    privileged: true
+    command: --reset -p yes
+
   crystal:
     build:
       dockerfile: Dockerfile.crystal
       args:
         ALPINE_VERSION:
         CRYSTAL_VERSION:
+        RELEASE:
+      platforms:
+        - linux/arm64
     image: matefarkas/crystal-arm64/crystal:${CRYSTAL_VERSION}
     network_mode: default
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
@@ -19,7 +27,10 @@ services:
       args:
         ALPINE_VERSION:
         CRYSTAL_VERSION:
+        RELEASE:
         SHARDS_VERSION:
+      platforms:
+        - linux/arm64
     image: matefarkas/crystal-arm64/shards:${SHARDS_VERSION}
     network_mode: default
     user: ${USER_ID:-1000}:${GROUP_ID:-1000}
@@ -33,6 +44,8 @@ services:
       args:
         gc_version: ${GC_VERSION}
         release: ${RELEASE}
+      platforms:
+        - linux/arm64
     command: |
       -c '
         mkdir -p /out/lib/crystal/

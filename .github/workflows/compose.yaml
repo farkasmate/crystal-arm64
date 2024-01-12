@@ -1,15 +1,78 @@
-name: compose
+name: ci
 
 on:
   push:
     branches: [master]
+    tags: ["*"]
   workflow_dispatch:
 
 jobs:
-  test:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - run: docker compose version
-      - run: ls -l
+      - name: Setup environment
+        run: |
+          echo "USER_ID=$(id -u)" >> "${GITHUB_ENV}"
+          echo "GROUP_ID=$(id -g)" >> "${GITHUB_ENV}"
+          echo "RELEASE=true" >> "${GITHUB_ENV}"
+
+      - run: docker compose run --rm qemu
+
+      - run: docker compose build
+      - run: docker compose run --rm package
+      - run: docker compose down
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: crystal
+          path: out/crystal-*-1-linux-aarch64.tar.gz
+          retention-days: 7
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker compose run --rm qemu
+
+      - name: Install dependencies
+        run: sudo apt-get install --assume-yes build-essential pkg-config libevent-dev libgc-dev libpcre2-dev
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal
+
+      - name: Install crystal
+        run: |
+          tar xzf crystal-*-1-linux-aarch64.tar.gz
+          echo "PATH=${PWD}/$(ls -d crystal-*-1/bin):/usr/bin" >> "${GITHUB_ENV}"
+
+      - name: Generate test project
+        run: |
+          crystal --version
+          crystal init app test
+          echo 'puts "Hello World!"' >> test/src/test.cr
+
+      - name: Run test project
+        run: |
+          cd test/
+          shards run --no-color --target=x86_64-unknown-linux-gnu
+
+  release:
+    needs: test
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: crystal
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          body: "Based on [Crystal ${{ github.ref_name }}](https://github.com/crystal-lang/crystal/releases/tag/${{ github.ref_name }})"
+          files: crystal-*-1-linux-aarch64.tar.gz
