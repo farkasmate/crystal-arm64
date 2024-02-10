@@ -1,6 +1,8 @@
 name: ci
 
 on:
+  pull_request:
+    branches: [master]
   push:
     branches: [master]
     tags: ["*"]
@@ -38,7 +40,8 @@ jobs:
       - run: docker compose run --rm qemu
 
       - name: Install dependencies
-        run: sudo apt-get install --assume-yes build-essential pkg-config libevent-dev libgc-dev libpcre2-dev
+        run: |
+          sudo apt-get install --assume-yes build-essential pkg-config libevent-dev libgc-dev libpcre2-dev
 
       - uses: actions/download-artifact@v4
         with:
@@ -74,5 +77,6 @@ jobs:
       - name: Release
         uses: softprops/action-gh-release@v1
         with:
-          body: "Based on [Crystal ${{ github.ref_name }}](https://github.com/crystal-lang/crystal/releases/tag/${{ github.ref_name }})"
+          body: |
+            "Based on [Crystal ${{ github.ref_name }}](https://github.com/crystal-lang/crystal/releases/tag/${{ github.ref_name }})"
           files: crystal-*-1-linux-aarch64.tar.gz

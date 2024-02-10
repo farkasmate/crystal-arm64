@@ -1,0 +1,43 @@
+name: new_tag
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  new_tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: check_tag
+        name: Check for new tag
+        run: |
+          ./bin/update_crystal_version.sh
+          if ! git diff --quiet
+          then
+            echo "changed=true" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - if: ${{ steps.check_tag.outputs.changed == 'true' }}
+        name: Update build config
+        run: |
+          ./bin/update_alpine_version.sh
+          ./bin/update_dependency_versions.sh
+          ./bin/update_libgc_dockerfile.sh
+
+      - if: ${{ steps.check_tag.outputs.changed == 'true' }}
+        name: Create Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          title: Update build config
+          commit-message: |
+            Update build config
+          base: master
+          branch: update_config
+          reviewers: farkasmate
