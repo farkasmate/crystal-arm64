@@ -78,5 +78,5 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           body: |
-            "Based on [Crystal ${{ github.ref_name }}](https://github.com/crystal-lang/crystal/releases/tag/${{ github.ref_name }})"
+            Based on [Crystal ${{ github.ref_name }}](https://github.com/crystal-lang/crystal/releases/tag/${{ github.ref_name }})
           files: crystal-*-1-linux-aarch64.tar.gz
