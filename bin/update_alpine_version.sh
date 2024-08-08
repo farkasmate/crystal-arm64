@@ -3,8 +3,12 @@
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 dotenv_file="${script_dir}/../.env"
 
-crystal_alpine_dockerfile="https://raw.githubusercontent.com/crystal-lang/distribution-scripts/master/docker/alpine.Dockerfile"
-crystal_makefile="https://raw.githubusercontent.com/crystal-lang/distribution-scripts/master/docker/Makefile"
+source "${dotenv_file}"
+wget -q "https://raw.githubusercontent.com/crystal-lang/crystal/${CRYSTAL_VERSION}/.circleci/config.yml" -O "/tmp/crystal_config.yaml"
+distribution_scripts_version=$(yq -r ".parameters.distribution-scripts-version.default" < "/tmp/crystal_config.yaml")
+
+crystal_alpine_dockerfile="https://raw.githubusercontent.com/crystal-lang/distribution-scripts/${distribution_scripts_version}/docker/alpine.Dockerfile"
+crystal_makefile="https://raw.githubusercontent.com/crystal-lang/distribution-scripts/${distribution_scripts_version}/docker/Makefile"
 
 wget -q "${crystal_alpine_dockerfile}" -O /tmp/crystal_alpine_dockerfile
 wget -q "${crystal_makefile}" -O /tmp/crystal_makefile
