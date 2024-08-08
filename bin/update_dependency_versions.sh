@@ -3,7 +3,11 @@
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 dotenv_file="${script_dir}/../.env"
 
-deps_makefile="https://raw.githubusercontent.com/crystal-lang/distribution-scripts/master/linux/Makefile"
+source "${dotenv_file}"
+wget -q "https://raw.githubusercontent.com/crystal-lang/crystal/${CRYSTAL_VERSION}/.circleci/config.yml" -O "/tmp/crystal_config.yaml"
+distribution_scripts_version=$(yq -r ".parameters.distribution-scripts-version.default" < "/tmp/crystal_config.yaml")
+
+deps_makefile="https://raw.githubusercontent.com/crystal-lang/distribution-scripts/${distribution_scripts_version}/linux/Makefile"
 
 wget -q "${deps_makefile}" -O /tmp/deps_makefile
 
