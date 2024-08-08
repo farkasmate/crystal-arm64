@@ -42,7 +42,8 @@ RUN apk add --no-cache \
   llvm15-dev \
   llvm15-static \
   pcre2-dev \
-  zlib-static
+  zlib-static \
+  zstd-static
 
 RUN make deps
 

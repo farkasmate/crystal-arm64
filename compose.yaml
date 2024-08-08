@@ -40,7 +40,7 @@ services:
   libgc:
     build:
       dockerfile: Dockerfile.libgc
-      target: debian
+      target: bdwgc
       args:
         gc_version: ${GC_VERSION}
         release: ${RELEASE}
